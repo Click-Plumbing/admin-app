@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Audit Log</h2>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">User</label>
+                            <select class="form-select" name="user_id">
+                                <option value="">All Users</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}" {% if request.args.get('user_id')|int == user.id %}selected{% endif %}>
+                                    {{ user.email }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Action Type</label>
+                            <select class="form-select" name="action_type">
+                                <option value="">All Actions</option>
+                                <option value="login" {% if request.args.get('action_type') == 'login' %}selected{% endif %}>Login</option>
+                                <option value="logout" {% if request.args.get('action_type') == 'logout' %}selected{% endif %}>Logout</option>
+                                <option value="Added" {% if request.args.get('action_type') == 'Added' %}selected{% endif %}>Added</option>
+                                <option value="Updated" {% if request.args.get('action_type') == 'Updated' %}selected{% endif %}>Updated</option>
+                                <option value="Deleted" {% if request.args.get('action_type') == 'Deleted' %}selected{% endif %}>Deleted</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Time Period</label>
+                            <select class="form-select" name="days">
+                                <option value="1" {% if request.args.get('days')|int == 1 %}selected{% endif %}>Last 24 Hours</option>
+                                <option value="7" {% if request.args.get('days')|int == 7 or not request.args.get('days') %}selected{% endif %}>Last 7 Days</option>
+                                <option value="30" {% if request.args.get('days')|int == 30 %}selected{% endif %}>Last 30 Days</option>
+                                <option value="90" {% if request.args.get('days')|int == 90 %}selected{% endif %}>Last 90 Days</option>
+                                <option value="0">All Time</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter"></i> Apply Filters
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                    <td>
+                                        {% for user in users %}
+                                            {% if user.id == log.user_id %}
+                                                {{ user.email }}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <td>{{ log.action }}</td>
+                                    <td>{{ log.details }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

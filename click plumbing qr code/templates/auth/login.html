@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block auth %}
+<div class="container">
+    <div class="row justify-content-center align-items-center" style="min-height: 100vh;">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h3 class="text-center mb-4">Click Plumbing</h3>
+                    <h5 class="text-center mb-4">Admin Portal Login</h5>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email address</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Sign In</button>
+                        </div>
+                    </form>
+                    
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-danger mt-3" role="alert">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

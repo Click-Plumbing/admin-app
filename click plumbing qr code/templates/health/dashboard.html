@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Health Monitoring Dashboard</h2>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Select Machine</h5>
+                    <select class="form-select" id="machineSelect" onchange="loadMachineData()">
+                        <option value="">Choose a machine...</option>
+                        {% for machine in machines %}
+                        <option value="{{ machine.id }}">{{ machine.customer_name }} - {{ machine.location_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Machine Status</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Last Shutdown:</strong> <span id="lastShutdown">-</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> <span id="machineStatus" class="badge bg-success">Online</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Flow Rates</h5>
+                    <div style="height: 300px;">
+                        <canvas id="flowRateChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Pressure Readings</h5>
+                    <div style="height: 300px;">
+                        <canvas id="pressureChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Temperature Readings</h5>
+                    <div style="height: 300px;">
+                        <canvas id="temperatureChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let flowRateChart, pressureChart, temperatureChart;
+let updateInterval;
+
+function initializeCharts() {
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        animation: {
+            duration: 0
+        },
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        }
+    };
+
+    // Flow Rate Chart
+    const flowCtx = document.getElementById('flowRateChart').getContext('2d');
+    flowRateChart = new Chart(flowCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Flow Rate 1',
+                    borderColor: 'rgb(75, 192, 192)',
+                    data: []
+                },
+                {
+                    label: 'Flow Rate 2',
+                    borderColor: 'rgb(153, 102, 255)',
+                    data: []
+                }
+            ]
+        },
+        options: commonOptions
+    });
+
+    // Pressure Chart
+    const pressureCtx = document.getElementById('pressureChart').getContext('2d');
+    pressureChart = new Chart(pressureCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Pressure 1',
+                    borderColor: 'rgb(255, 99, 132)',
+                    data: []
+                },
+                {
+                    label: 'Pressure 2',
+                    borderColor: 'rgb(54, 162, 235)',
+                    data: []
+                },
+                {
+                    label: 'Pressure 3',
+                    borderColor: 'rgb(255, 206, 86)',
+                    data: []
+                }
+            ]
+        },
+        options: commonOptions
+    });
+
+    // Temperature Chart
+    const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+    temperatureChart = new Chart(tempCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Temperature 1',
+                    borderColor: 'rgb(255, 159, 64)',
+                    data: []
+                },
+                {
+                    label: 'Temperature 2',
+                    borderColor: 'rgb(75, 192, 192)',
+                    data: []
+                }
+            ]
+        },
+        options: commonOptions
+    });
+}
+
+function updateCharts(data) {
+    const maxDataPoints = 20; // Limit the number of data points shown
+
+    // Helper function to limit array length
+    function limitArray(arr) {
+        return arr.slice(-maxDataPoints);
+    }
+
+    // Update flow rate chart
+    flowRateChart.data.labels = limitArray(data.timestamps.map(t => new Date(t).toLocaleTimeString()));
+    flowRateChart.data.datasets[0].data = limitArray(data.flow_rate_1);
+    flowRateChart.data.datasets[1].data = limitArray(data.flow_rate_2);
+    flowRateChart.update();
+
+    // Update pressure chart
+    pressureChart.data.labels = limitArray(data.timestamps.map(t => new Date(t).toLocaleTimeString()));
+    pressureChart.data.datasets[0].data = limitArray(data.pressure_1);
+    pressureChart.data.datasets[1].data = limitArray(data.pressure_2);
+    pressureChart.data.datasets[2].data = limitArray(data.pressure_3);
+    pressureChart.update();
+
+    // Update temperature chart
+    temperatureChart.data.labels = limitArray(data.timestamps.map(t => new Date(t).toLocaleTimeString()));
+    temperatureChart.data.datasets[0].data = limitArray(data.temperature_1);
+    temperatureChart.data.datasets[1].data = limitArray(data.temperature_2);
+    temperatureChart.update();
+
+    // Update last shutdown time
+    if (data.last_shutdown) {
+        const shutdownTime = new Date(data.last_shutdown);
+        const timeSinceShutdown = Math.floor((new Date() - shutdownTime) / (1000 * 60)); // minutes
+        document.getElementById('lastShutdown').textContent = `${timeSinceShutdown} minutes ago`;
+        
+        // Update status badge
+        const statusBadge = document.getElementById('machineStatus');
+        if (timeSinceShutdown < 5) {
+            statusBadge.className = 'badge bg-danger';
+            statusBadge.textContent = 'Offline';
+        } else {
+            statusBadge.className = 'badge bg-success';
+            statusBadge.textContent = 'Online';
+        }
+    } else {
+        document.getElementById('lastShutdown').textContent = 'No shutdown recorded';
+    }
+}
+
+function loadMachineData() {
+    const machineId = document.getElementById('machineSelect').value;
+    if (!machineId) return;
+
+    fetch(`/health/data/${machineId}`)
+        .then(response => response.json())
+        .then(data => {
+            updateCharts(data);
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Initialize charts when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    
+    // Set up auto-refresh
+    const machineSelect = document.getElementById('machineSelect');
+    machineSelect.addEventListener('change', function() {
+        if (updateInterval) {
+            clearInterval(updateInterval);
+        }
+        
+        if (this.value) {
+            loadMachineData();
+            updateInterval = setInterval(loadMachineData, 30000); // Refresh every 30 seconds
+        }
+    });
+});
+</script>
+{% endblock %}
